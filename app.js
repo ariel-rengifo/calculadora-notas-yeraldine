@@ -100,27 +100,16 @@ function renderCursos() {
     const notaFinalIcon = calc.notaFinal !== null ? (calc.notaFinal >= 11 ? '✓' : '✗') : '⏳';
     const notaFinalTexto = calc.notaFinal !== null ? (calc.notaFinal >= 11 ? 'APROBADO' : 'DESAPROBADO') : 'PENDIENTE';
     filas += `<tr class="nota-final-row ${notaFinalClass}"><td colspan="2"><strong>NOTA FINAL DEL CURSO</strong></td><td class="nota-final ${notaFinalClass}">${calc.notaFinal !== null ? calc.notaFinal.toFixed(2) : '—'}</td><td></td><td><span class="estado ${notaFinalClass}">${notaFinalIcon} ${notaFinalTexto}</span></td></tr>`;
-    filas += `<tr class="simulador-row"><td colspan="5"><div class="simulador-row-content"><strong>Simulador:</strong> Meta <strong>${sim.meta}</strong> · Peso ingresado <strong>${calc.pesoIngresado}%</strong> · Pendiente <strong>${sim.pesoPendiente || 0}%</strong> · Nota actual <strong>${calc.notaParcial !== null ? calc.notaParcial.toFixed(2) : '—'}</strong><br>${sim.mensaje}</div><button class="btn btn-primary btn-sm simulador-btn" data-curso="${curso.id}">Abrir simulador detallado</button></td></tr>`;
+    filas += `<tr class="simulador-row"><td colspan="5"><div class="simulador-row-content"><strong>Simulador:</strong> Meta <strong>${sim.meta}</strong> · Peso ingresado <strong>${calc.pesoIngresado}%</strong> · Pendiente <strong>${sim.pesoPendiente || 0}%</strong> · Nota actual <strong>${calc.notaParcial !== null ? calc.notaParcial.toFixed(2) : '—'}</strong></div></td></tr>`;
     const cardEl = document.createElement('section'); cardEl.className = 'card'; cardEl.id = `curso-${curso.id}`;
     cardEl.innerHTML = `<div class="curso-header"><h3>${curso.nombre} <small>(${curso.codigo})</small></h3><div class="curso-meta"><label for="meta-${curso.id}">Mi meta: <input type="number" id="meta-${curso.id}" class="meta-input" data-curso="${curso.id}" value="${state.metas[curso.id] || ''}" min="0" max="20" step="0.1" inputmode="decimal"></label></div></div><table class="tabla-curso" aria-label="Productos de ${curso.nombre}"><thead><tr><th>Producto</th><th>Peso</th><th>Nota (0-20)</th><th>Aporte</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>`;
     container.appendChild(cardEl);
   });
   $$('.nota-input').forEach(input => { input.addEventListener('input', e => { const val = e.target.value === '' ? null : parseFloat(e.target.value); const cursoId = e.target.dataset.curso; const prodId = e.target.dataset.producto; if (val !== null && (isNaN(val) || val < 0 || val > NOTA_MAX)) { e.target.classList.add('invalid'); e.target.classList.remove('valid'); } else { e.target.classList.remove('invalid'); if (val !== null) e.target.classList.add('valid'); } if (!state.notas[cursoId]) state.notas[cursoId] = {}; state.notas[cursoId][prodId] = val; saveState(); renderAll(); }); input.addEventListener('blur', e => { if (e.target.value === '') e.target.classList.remove('valid', 'invalid'); }); });
   $$('.meta-input').forEach(input => input.addEventListener('change', e => { state.metas[e.target.dataset.curso] = parseFloat(e.target.value) || ''; saveState(); renderResumen(); }));
-  $$('.simulador-btn').forEach(btn => btn.addEventListener('click', e => abrirSimulador(e.target.dataset.curso)));
 }
 
 function renderAll() { renderResumen(); renderCursos(); }
-
-// ========== SIMULADOR MODAL ==========
-const modal = $('#modal-simulador'), modalClose = $('.modal-close', modal);
-function abrirSimulador(cursoId) {
-  const curso = CURSOS.find(c => c.id === cursoId); const sim = calcularSimulador(curso);
-  $('#simulador-curso').textContent = `${curso.nombre} (${curso.codigo})`; $('#sim-meta').value = sim.meta; $('#simulador-result').innerHTML = sim.mensaje; modal.showModal(); $('#sim-meta').focus(); }
-function cerrarSimulador() { modal.close(); }
-modalClose.addEventListener('click', cerrarSimulador); modal.addEventListener('click', e => { if (e.target === modal) cerrarSimulador(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.open) cerrarSimulador(); });
-$('#sim-meta').addEventListener('input', e => { const cursoNombre = $('#simulador-curso').textContent.split(' (')[0]; const curso = CURSOS.find(c => c.nombre === cursoNombre); if (!curso) return; const meta = parseFloat(e.target.value) || 11; state.metas[curso.id] = meta; saveState(); const sim = calcularSimulador(curso); $('#simulador-result').innerHTML = sim.mensaje; renderAll(); });
 
 // ========== EXPORT / IMPORT / RESET ==========
 $('#btn-export').addEventListener('click', () => { const data = { version: '1.0', fecha: new Date().toISOString(), semestre: '2026-2', notas: state.notas, metas: state.metas }; const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `notas-yeraldine-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); });

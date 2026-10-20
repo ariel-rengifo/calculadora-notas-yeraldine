@@ -39,7 +39,6 @@
             <th>Créd</th>
             <th>Nota Final</th>
             <th>Estado</th>
-            <th>Faltan ×11</th>
             <th>Meta</th>
           </tr>
         </thead>
@@ -49,7 +48,6 @@
             <td colspan="2"><strong>PROMEDIO PONDERADO</strong></td>
             <td id="promedio-ponderado" class="promedio-ponderado">—</td>
             <td id="estado-general">—</td>
-            <td id="total-creditos">—</td>
             <td></td>
           </tr>
         </tfoot>
@@ -64,22 +62,6 @@
     <p>Datos guardados automáticamente en tu navegador (localStorage).</p>
     <p>Usa <strong>Exportar</strong> para guardar backup en Drive/OneDrive.</p>
   </footer>
-
-  <dialog id="modal-simulador" class="modal">
-    <div class="modal-content">
-      <header class="modal-header">
-        <h3>🔮 Simulador</h3>
-        <button class="modal-close" aria-label="Cerrar">×</button>
-      </header>
-      <div class="modal-body">
-        <p id="simulador-curso"></p>
-        <div class="form-row">
-          <label>Mi meta: <input type="number" id="sim-meta" min="0" max="20" step="0.1" value="11"></label>
-        </div>
-        <div class="simulador-result" id="simulador-result"></div>
-      </div>
-    </div>
-  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>
