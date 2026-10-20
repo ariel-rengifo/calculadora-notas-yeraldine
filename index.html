@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculadora de notas semestral - Facultad de Psicologia PUCP 2026-2">
+  <title>Calculadora de Notas | Yeraldine</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+  <header class="header">
+    <div class="header-inner">
+      <div>
+        <h1>📊 Calculadora de Notas</h1>
+        <p class="subtitle">Semestre 2026-2 • Facultad de Psicología PUCP</p>
+      </div>
+      <div class="header-actions">
+        <button id="btn-export" class="btn btn-secondary" title="Exportar backup JSON">💾 Exportar</button>
+        <input type="file" id="file-import" accept=".json" hidden>
+        <button id="btn-import" class="btn btn-secondary" title="Importar backup JSON">📥 Importar</button>
+        <button id="btn-reset" class="btn btn-danger" title="Borrar todas las notas">🗑️ Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content" class="main">
+    <section id="resumen" class="card resumen-card">
+      <h2>📋 Resumen del Semestre</h2>
+      <table class="tabla-resumen" aria-label="Resumen de notas por curso">
+        <thead>
+          <tr>
+            <th>Curso</th>
+            <th>Créd</th>
+            <th>Nota Final</th>
+            <th>Estado</th>
+            <th>Faltan ×11</th>
+            <th>Meta</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resumen"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="2"><strong>PROMEDIO PONDERADO</strong></td>
+            <td id="promedio-ponderado" class="promedio-ponderado">—</td>
+            <td id="estado-general">—</td>
+            <td id="total-creditos">—</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="hint">💡 Ingresa notas en cada curso abajo. El resumen se actualiza solo.</p>
+    </section>
+
+    <section id="cursos-container"></section>
+  </main>
+
+  <footer class="footer">
+    <p>Datos guardados automáticamente en tu navegador (localStorage).</p>
+    <p>Usa <strong>Exportar</strong> para guardar backup en Drive/OneDrive.</p>
+  </footer>
+
+  <dialog id="modal-simulador" class="modal">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h3>🔮 Simulador</h3>
+        <button class="modal-close" aria-label="Cerrar">×</button>
+      </header>
+      <div class="modal-body">
+        <p id="simulador-curso"></p>
+        <div class="form-row">
+          <label>Mi meta: <input type="number" id="sim-meta" min="0" max="20" step="0.1" value="11"></label>
+        </div>
+        <div class="simulador-result" id="simulador-result"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
