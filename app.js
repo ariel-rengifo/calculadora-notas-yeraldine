@@ -15,7 +15,12 @@ function round2(val) { return Math.round(val * 100) / 100; }
 function loadState() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) { const p = JSON.parse(saved); state.notas = p.notas || {}; state.metas = p.metas || {}; }
+    if (saved) {
+      const p = JSON.parse(saved);
+      // Validar schema: notas y metas deben ser objetos
+      state.notas = (p.notas && typeof p.notas === 'object') ? p.notas : {};
+      state.metas = (p.metas && typeof p.metas === 'object') ? p.metas : {};
+    }
   } catch (e) { console.warn('Error cargando localStorage:', e); }
 }
 
@@ -47,8 +52,8 @@ function calcularSimulador(curso) {
   if (necesario <= 0) mensaje = `✅ Ya alcanzaste tu meta de ${meta} sin necesidad de más notas.`;
   else if (necesario > NOTA_MAX) mensaje = `❌ Necesitas <strong>${necesario}</strong> en lo pendiente (máx: ${NOTA_MAX}). Meta ${meta} inalcanzable.`;
   else if (necesario > 17) mensaje = `⚠️ Necesitas <strong>${necesario}</strong> en promedio en lo que falta. Muy exigente.`;
-  else if (necesario >= NOTA_MINIMA_APROBAR) mensaje = `📝 Necesitas <strong>${necesario}</strong> en promedio en lo pendiente para llegar a ${meta}.`;
-  else mensaje = `🎯 Necesitas <strong>${necesario}</strong> en promedio en lo pendiente. ¡Factible!`;
+  else if (meta === NOTA_MINIMA_APROBAR) mensaje = `🎯 Necesitas <strong>${necesario}</strong> en lo pendiente para aprobar.`;
+  else mensaje = `🎯 Necesitas <strong>${necesario}</strong> en promedio en lo pendiente para llegar a ${meta}.`;
   return { mensaje, necesario, meta, pesoPendiente, notaActual: calc.notaParcial };
 }
 
@@ -80,15 +85,12 @@ function renderResumen() {
   $('#promedio-ponderado').textContent = promedioPonderado !== null ? promedioPonderado.toFixed(2) : '—';
   $('#promedio-ponderado').className = 'promedio-ponderado ' + (promedioPonderado !== null ? (promedioPonderado >= 11 ? 'aprobado' : 'desaprobado') : '');
   $('#estado-general').innerHTML = `<span class="estado ${estadoGeneral}">${estadoGeneral === 'aprobado' ? '✓ APROBADO' : estadoGeneral === 'desaprobado' ? '✗ DESAPROBADO' : '⏳ PENDIENTE'}</span>`;
-  $('#total-creditos').textContent = totalCreditos;
-  $$('.meta-input').forEach(input => input.addEventListener('change', e => { state.metas[e.target.dataset.curso] = parseFloat(e.target.value) || ''; saveState(); renderResumen(); }));
 }
 
 function renderCursos() {
   const container = $('#cursos-container'); container.innerHTML = '';
   CURSOS.forEach(curso => {
     const calc = calcularNotaCurso(curso); const sim = calcularSimulador(curso); const notasCurso = state.notas[curso.id] || {};
-    const card = document.createElement('section'); card.className = 'card'; card.id = `curso-${curso.id}`;
     let filas = '';
     curso.productos.forEach(prod => {
       const nota = notasCurso[prod.id]; const aporte = nota !== undefined && nota !== null && nota !== '' ? round2(nota * prod.peso / 100) : '';
@@ -106,7 +108,6 @@ function renderCursos() {
     container.appendChild(cardEl);
   });
   $$('.nota-input').forEach(input => { input.addEventListener('input', e => { const val = e.target.value === '' ? null : parseFloat(e.target.value); const cursoId = e.target.dataset.curso; const prodId = e.target.dataset.producto; if (val !== null && (isNaN(val) || val < 0 || val > NOTA_MAX)) { e.target.classList.add('invalid'); e.target.classList.remove('valid'); } else { e.target.classList.remove('invalid'); if (val !== null) e.target.classList.add('valid'); } if (!state.notas[cursoId]) state.notas[cursoId] = {}; state.notas[cursoId][prodId] = val; saveState(); renderAll(); }); input.addEventListener('blur', e => { if (e.target.value === '') e.target.classList.remove('valid', 'invalid'); }); });
-  $$('.meta-input').forEach(input => input.addEventListener('change', e => { state.metas[e.target.dataset.curso] = parseFloat(e.target.value) || ''; saveState(); renderResumen(); }));
 }
 
 function renderAll() { renderResumen(); renderCursos(); }
@@ -119,4 +120,13 @@ $('#btn-reset').addEventListener('click', () => { if (confirm('¿Borrar TODAS la
 
 // ========== INIT ==========
 loadState(); renderAll();
+
+// Delegación única para meta-input (cubre resumen y tarjetas de curso)
+document.addEventListener('change', e => {
+  if (e.target.matches('.meta-input')) {
+    state.metas[e.target.dataset.curso] = parseFloat(e.target.value) || '';
+    saveState(); renderResumen();
+  }
+});
+
 console.log('✅ Calculadora de Notas cargada'); console.log('💾 Datos en localStorage:', STORAGE_KEY);

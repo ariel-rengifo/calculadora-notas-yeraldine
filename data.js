@@ -24,8 +24,10 @@ export const CURSOS = [
     productos: [
       { id: 'P1', nombre: 'Evaluación Escrita (Individual)', peso: 10 },
       { id: 'P2', nombre: 'Control Cognitivo (Individual)', peso: 15 },
-      { id: 'P3', nombre: 'Análisis de casos (Individual 5% + Grupal 10%)', peso: 15 },
-      { id: 'P4', nombre: 'Evaluación desarrollo psicosocial (Individual 10% + Grupal 15%)', peso: 25 },
+      { id: 'P3-ind', nombre: 'Análisis de casos - Individual', peso: 5 },
+      { id: 'P3-grupal', nombre: 'Análisis de casos - Grupal', peso: 10 },
+      { id: 'P4-ind', nombre: 'Eval. desarrollo psicosocial - Individual', peso: 10 },
+      { id: 'P4-grupal', nombre: 'Eval. desarrollo psicosocial - Grupal', peso: 15 },
       { id: 'P5', nombre: 'Examen Integrador Oral (Individual)', peso: 35 },
     ]
   },
