@@ -127,10 +127,12 @@ function attachNotaInputListeners() {
       state.notas[cursoId][prodId] = val;
       saveState();
       
-      // Actualización granular: solo la fila afectada + resumen + simulador del curso
-      updateRowAfterInput(cursoId, prodId, val);
-      renderResumen();
-      updateCursoSimulador(cursoId);
+      // Deferir actualizaciones DOM al siguiente frame para no interrumpir el input event
+      requestAnimationFrame(() => {
+        updateRowAfterInput(cursoId, prodId, val);
+        renderResumen();
+        updateCursoSimulador(cursoId);
+      });
     });
     input.addEventListener('blur', e => { if (e.target.value === '') e.target.classList.remove('valid', 'invalid'); });
   });
