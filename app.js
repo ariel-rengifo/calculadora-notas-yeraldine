@@ -51,12 +51,10 @@ function renderCursos() {
     const sim = calcularSimulador(curso, notasCurso, state.metas[curso.id] || NOTA_MINIMA_APROBAR);
     let filas = '';
 
-    // Agrupar productos por "familia" para Aprendizaje (P3 y P6 son alternativas)
     const grupos = agruparProductos(curso.productos);
 
     grupos.forEach(grupo => {
       if (grupo.esAlternativa) {
-        // Mostrar como fila con dos inputs alternativos
         const prodA = grupo.productos[0];
         const prodB = grupo.productos[1];
         const notaA = notasCurso[prodA.id];
@@ -86,14 +84,13 @@ function renderCursos() {
           <td class="estado">${estadoTxtA || estadoTxtB || '⏳'}</td>
         </tr>`;
       } else {
-        // Productos normales
         grupo.productos.forEach(prod => {
           const nota = notasCurso[prod.id];
           const aporte = nota !== undefined && nota !== null && nota !== '' ? round2(nota * prod.peso / 100) : '';
           const estado = nota !== undefined && nota !== null && nota !== '' ? (nota >= 11 ? 'ok' : 'no') : '';
           const estadoTxt = estado === 'ok' ? '✓' : estado === 'no' ? '✗' : '⏳';
           const tipoBadge = prod.tipo ? `<span class="tipo-badge ${prod.tipo.toLowerCase()}">${prod.tipo}</span>` : '';
-          filas += `<tr><td>${tipoBadge} ${prod.id} - ${prod.nombre}</td><td>${prod.peso}%</td><td><input type="number" class="nota-input" data-curso="${curso.id}" data-producto="${prod.id}" value="${nota !== undefined && nota !== null && nota !== '' ? nota : ''}" min="0" max="${NOTA_MAX}" step="0.1" placeholder="0-20" aria-label="Nota para ${prod.nombre}"></td><td class="aporte">${aporte !== '' ? aporte.toFixed(2) : '—'}</td><td class="estado ${estado}">${estadoTxt}</td></tr>`;
+          filas += `<tr data-curso="${curso.id}" data-producto="${prod.id}"><td>${tipoBadge} ${prod.id} - ${prod.nombre}</td><td>${prod.peso}%</td><td><input type="number" class="nota-input" data-curso="${curso.id}" data-producto="${prod.id}" value="${nota !== undefined && nota !== null && nota !== '' ? nota : ''}" min="0" max="${NOTA_MAX}" step="0.1" placeholder="0-20" aria-label="Nota para ${prod.nombre}"></td><td class="aporte">${aporte !== '' ? aporte.toFixed(2) : '—'}</td><td class="estado ${estado}">${estadoTxt}</td></tr>`;
         });
       }
     });
@@ -107,23 +104,88 @@ function renderCursos() {
     cardEl.innerHTML = `<div class="curso-header"><h3>${curso.nombre} <small>(${curso.codigo})</small></h3><div class="curso-meta"><label for="meta-${curso.id}">Mi meta: <input type="number" id="meta-${curso.id}" class="meta-input" data-curso="${curso.id}" value="${state.metas[curso.id] || ''}" min="0" max="20" step="0.1" inputmode="decimal"></label></div></div><table class="tabla-curso" aria-label="Productos de ${curso.nombre}"><thead><tr><th>Producto</th><th>Peso</th><th>Nota (0-20)</th><th>Aporte</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>`;
     container.appendChild(cardEl);
   });
+  attachNotaInputListeners();
+}
+
+function attachNotaInputListeners() {
   $$('.nota-input').forEach(input => {
     input.addEventListener('input', e => {
       const val = e.target.value === '' ? null : parseFloat(e.target.value);
       const cursoId = e.target.dataset.curso;
       const prodId = e.target.dataset.producto;
+      
+      // Validación visual inmediata (sin re-render)
       if (val !== null && (isNaN(val) || val < 0 || val > NOTA_MAX)) {
         e.target.classList.add('invalid'); e.target.classList.remove('valid');
       } else {
         e.target.classList.remove('invalid');
         if (val !== null) e.target.classList.add('valid');
       }
+      
+      // Actualizar estado
       if (!state.notas[cursoId]) state.notas[cursoId] = {};
       state.notas[cursoId][prodId] = val;
-      saveState(); renderAll();
+      saveState();
+      
+      // Actualización granular: solo la fila afectada + resumen + simulador del curso
+      updateRowAfterInput(cursoId, prodId, val);
+      renderResumen();
+      updateCursoSimulador(cursoId);
     });
     input.addEventListener('blur', e => { if (e.target.value === '') e.target.classList.remove('valid', 'invalid'); });
   });
+}
+
+function updateRowAfterInput(cursoId, prodId, val) {
+  const row = $(`tr[data-curso="${cursoId}"][data-producto="${prodId}"]`);
+  if (!row) return;
+  
+  const curso = CURSOS.find(c => c.id === cursoId);
+  const prod = curso.productos.find(p => p.id === prodId);
+  if (!prod) return;
+  
+  const aporteCell = row.querySelector('.aporte');
+  const estadoCell = row.querySelector('.estado');
+  
+  if (val !== null && val !== undefined && val !== '') {
+    const aporte = round2(val * prod.peso / 100);
+    const estado = val >= 11 ? 'ok' : 'no';
+    const estadoTxt = estado === 'ok' ? '✓' : '✗';
+    
+    aporteCell.textContent = aporte.toFixed(2);
+    estadoCell.textContent = estadoTxt;
+    estadoCell.className = `estado ${estado}`;
+  } else {
+    aporteCell.textContent = '—';
+    estadoCell.textContent = '⏳';
+    estadoCell.className = 'estado';
+  }
+}
+
+function updateCursoSimulador(cursoId) {
+  const curso = CURSOS.find(c => c.id === cursoId);
+  const notasCurso = state.notas[cursoId] || {};
+  const calc = calcularNotaCurso(curso, notasCurso);
+  const sim = calcularSimulador(curso, notasCurso, state.metas[cursoId] || NOTA_MINIMA_APROBAR);
+  
+  const card = $(`#curso-${cursoId}`);
+  if (!card) return;
+  
+  // Actualizar nota final
+  const notaFinalRow = card.querySelector('.nota-final-row');
+  if (notaFinalRow) {
+    const notaFinalClass = calc.notaFinal !== null ? (calc.notaFinal >= 11 ? 'aprobado' : 'desaprobado') : '';
+    const notaFinalIcon = calc.notaFinal !== null ? (calc.notaFinal >= 11 ? '✓' : '✗') : '⏳';
+    const notaFinalTexto = calc.notaFinal !== null ? (calc.notaFinal >= 11 ? 'APROBADO' : 'DESAPROBADO') : 'PENDIENTE';
+    notaFinalRow.className = `nota-final-row ${notaFinalClass}`;
+    notaFinalRow.innerHTML = `<td colspan="2"><strong>NOTA FINAL DEL CURSO</strong></td><td class="nota-final ${notaFinalClass}">${calc.notaFinal !== null ? calc.notaFinal.toFixed(2) : '—'}</td><td></td><td><span class="estado ${notaFinalClass}">${notaFinalIcon} ${notaFinalTexto}</span></td>`;
+  }
+  
+  // Actualizar simulador
+  const simRow = card.querySelector('.simulador-row');
+  if (simRow) {
+    simRow.innerHTML = `<td colspan="5"><div class="simulador-row-content"><strong>Simulador:</strong> Meta <strong>${sim.meta}</strong> · Peso ingresado <strong>${calc.pesoIngresado}%</strong> · Pendiente <strong>${sim.pesoPendiente || 0}%</strong> · Nota actual <strong>${calc.notaParcial !== null ? calc.notaParcial.toFixed(2) : '—'}</strong> · Acumulado <strong>${sim.acumulado !== undefined ? sim.acumulado.toFixed(2) : '—'}</strong></div></td>`;
+  }
 }
 
 function agruparProductos(productos) {
@@ -133,7 +195,6 @@ function agruparProductos(productos) {
   for (const prod of productos) {
     if (vistos.has(prod.id)) continue;
 
-    // Detectar pares alternativos en Aprendizaje
     if (prod.id.startsWith('P3-') && prod.id.includes('peli')) {
       const alt = productos.find(p => p.id === 'P3-escrit');
       if (alt) {
@@ -161,15 +222,12 @@ function agruparProductos(productos) {
       }
     }
 
-    // Producto normal
     grupos.push({ nombre: prod.nombre, esAlternativa: false, productos: [prod] });
     vistos.add(prod.id);
   }
 
   return grupos;
 }
-
-function renderAll() { renderResumen(); renderCursos(); }
 
 // ========== EXPORT / IMPORT / RESET ==========
 $('#btn-export').addEventListener('click', () => {
@@ -203,6 +261,8 @@ $('#btn-reset').addEventListener('click', () => {
     state.notas = {}; state.metas = {}; saveState(); renderAll();
   }
 });
+
+function renderAll() { renderResumen(); renderCursos(); }
 
 // ========== INIT ==========
 loadState(); renderAll();
